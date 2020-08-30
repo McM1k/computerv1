@@ -1,17 +1,6 @@
 use std::env;
 
-/*
-** of course it would be smarter to use a vector
-** but the goal was to code this in the shortest amount of time possible
-*/
-#[derive(Clone, Copy)]
-pub struct Pol {
-    pub a: f64,
-    pub b: f64,
-    pub c: f64,
-}
-
-fn print_solution(degree: i32, pol: Pol) {
+fn print_solution(degree: i32, pol: Vec<f64>) {
     if degree == 0 {
         if pol.c == 0.0 {
             println!("The solution is R");
@@ -39,30 +28,12 @@ fn print_solution(degree: i32, pol: Pol) {
     }
 }
 
-fn reduce(lhs: Pol, rhs: Pol) -> Pol {
-    Pol {
-        a: lhs.a - rhs.a,
-        b: lhs.b - rhs.b,
-        c: lhs.c - rhs.c,
-    }
-}
-
-fn print_degree(pol: Pol) -> i32 {
-    let mut degree = 0;
-    if pol.c != 0.0 {
-        degree = 0
-    }
-    if pol.b != 0.0 {
-        degree = 1
-    }
-    if pol.a != 0.0 {
-        degree = 2
-    }
-    println!("Polynomial degree : {}", degree);
+fn print_degree(pol: Vec<f64>) -> i32 {
+    println!("Polynomial degree : {}", pol.len());
     degree
 }
 
-fn print_reduced(pol: Pol) {
+fn print_reduced(pol: Vec<f64>) {
     let mut format = "".to_string();
     if pol.c != 0.0 {
         if pol.c < 0.0 {
@@ -92,15 +63,11 @@ fn print_reduced(pol: Pol) {
     println!("Reduced form : {}= 0", format);
 }
 
-fn parse(eq: String) -> Result<Pol, String> {
+fn parse(eq: String) -> Result<Vec<f64>, String> {
     let splits: Vec<&str> = eq.split(' ').collect();
+    let mut rhs = false;
     let mut tmp = 1.0;
-    let mut rhs = Pol {
-        a: 0.0,
-        b: 0.0,
-        c: 0.0,
-    };
-    let mut lhs = rhs;
+    let mut pol = vec![0.0];
     for split in splits {
         match split.chars().nth(0).unwrap() {
             '-' => {
@@ -113,34 +80,21 @@ fn parse(eq: String) -> Result<Pol, String> {
             '0'..='9' => {
                 tmp = match split.parse::<f64>() {
                     Ok(x) => tmp * x,
-                    Err(_) => {
-                        return Err(format!("Cannot parse float : \"{}\"", split));
-                    }
+                    Err(_) => { return Err(format!("Cannot parse float : \"{}\"", split)); }
                 };
             }
             'X' => {
-                match split.chars().nth(2).unwrap() {
-                    '2' => {
-                        rhs.a = tmp;
-                    }
-                    '1' => {
-                        rhs.b = tmp;
-                    }
-                    '0' => {
-                        rhs.c = tmp;
-                    }
-                    _ => {
-                        return Err(format!("The polynomial degree is stricly greater than 2, I can't solve : \"{}\"", split));
-                    }
+                let pow = match split[2..].parse::<usize>() {
+                    Ok(x) => x,
+                    Err(_) => { return Err(format!("Cannot parse power : \"{}\"", split)); }
+                };
+                while pow < pol.len() {
+
                 }
+                pol[pow] = tmp;
                 tmp = 1.0;
             }
-            '=' => {
-                lhs = rhs;
-                rhs.a = 0.0;
-                rhs.b = 0.0;
-                rhs.c = 0.0;
-            }
+            '=' => { rhs = true; }
             _ => {
                 return Err(format!("wrong token : \"{}\"", split));
             }
