@@ -13,97 +13,79 @@ fn cut_spaces(eq: String) -> String {
     new
 }
 
-fn tokenize(eq: String) -> Vec<&str> {
-    let splits_indices = eq.matches_indices('+' || '-').collect();
+fn tokenize(eq: String) -> Vec<String> {
+    let splits_indices: (usize, &str) = eq.match_indices(|c| {c == '+' || c == '-'}).collect();
     let mut vec = Vec::new();
     if splits_indices.len() == 0 {
-        vec.push(eq.as_str());
+        vec.push(eq);
     }
     else {
         if splits_indices[0].0 != 0 {
-            vec.push(&eq[0..splits_indices[0].0]);
+            vec.push(eq[0..splits_indices[0].0].to_string());
         }
         let mut i = 0;
         while i < splits_indices.len() {
-            let (ind, _split) = split_indices[i];
-            if split_indices.len() == i-1 { let next_ind = eq.len(); }
-            else { let next_ind = splits_indices[i + 1].0; }
-            vec.push(&eq[ind..next_ind]);
+            let (ind, _split) = splits_indices[i];
+            let next_ind;
+            if splits_indices.len() == i-1 { next_ind = eq.len(); }
+            else { next_ind = splits_indices[i + 1].0; }
+            vec.push(eq[ind..next_ind].to_string());
             i = i + 1;
         }
     }
     vec
 }
 
-fn transform_tokens(tokens: Vec<&str>) -> Vec<f64> {
-    let vec = Vec::new();
+fn transform_tokens(tokens: Vec<String>) -> Vec<f64> {
+    let mut vec = Vec::new();
     for token in tokens {
-        (value, pow) = retrieve_value_pow(token);
-        if vec.len() < pow - 1 {
-            vec.f //TODO fill with 0.0
+        let (value, pow) = retrieve_value_pow(token);
+        while vec.len() < pow + 1 {
+            vec.push(0.0);
         }
+        vec[pow] = vec[pow] + value;
     }
     vec
 }
 
-fn retrieve_value_pow(token: &str) -> (f64, i32) {
+fn retrieve_value_pow(token: String) -> (f64, usize) {
     let split: Vec<&str> = token.split('X').collect();
     let value = split[0]
         .parse::<f64>()
-        .expect(panic!("Unable to parse value"));
+        .unwrap_or_else(|_|panic!("Unable to parse value"));
+    let pow;
     if split.len() > 0 {
-        if split[1].len() == 0 {
-            let pow = 1;
-        }
+        if split[1].len() == 0 { pow = 1; }
         else {
-            let pow = split[1]
+            pow = split[1]
                 .replace("^", "")
-                .parse::<i32>()
-                .expect(panic!("Unable to parse pow"));
+                .parse::<usize>()
+                .unwrap_or_else(|_|panic!("Unable to parse pow"));
         }
     }
-    else {
-        let pow = 0;
-    }
+    else { pow = 0; }
     (value, pow)
 }
 
-pub fn parse(eq: String) -> Result<Vec<f64>, String> {
-    let splits: Vec<&str> = eq.split(' ').collect();
-    let mut rhs = false;
-    let mut tmp = 1.0;
-    let mut pol = vec![0.0];
-    for split in splits {
-        match split.chars().nth(0).unwrap() {
-            '-' => {
-                if split == "-" {
-                    tmp = -1.0;
-                }
-            }
-            '+' => (),
-            '*' => (),
-            '0'..='9' => {
-                tmp = match split.parse::<f64>() {
-                    Ok(x) => tmp * x,
-                    Err(_) => { return Err(format!("Cannot parse float : \"{}\"", split)); }
-                };
-            }
-            'X' => {
-                let pow = match split[2..].parse::<usize>() {
-                    Ok(x) => x,
-                    Err(_) => { return Err(format!("Cannot parse power : \"{}\"", split)); }
-                };
-                while pow < pol.len() {
-
-                }
-                pol[pow] = tmp;
-                tmp = 1.0;
-            }
-            '=' => { rhs = true; }
-            _ => {
-                return Err(format!("wrong token : \"{}\"", split));
-            }
-        }
+fn reduce(lhs: Vec<f64>, rhs: Vec<f64>) -> Vec<f64> {
+    let mut i = 0;
+    let mut pol = Vec::new();
+    while lhs.len() > i || rhs.len() > i {
+        if lhs.len() <= i { pol.push(- rhs[i]); }
+        else if rhs.len() <= i { pol.push(lhs[i]); }
+        else { pol.push(lhs[i] - rhs[i]); }
+        i = i + 1;
     }
-    Ok(reduce(lhs, rhs))
+    while pol.last().is_some() && (pol[pol.len() - 1] == 0.0) { pol.pop(); }
+    pol
+}
+
+pub fn parse(eq: String) -> Vec<f64> {
+    let eq = cut_spaces(eq);
+    let (lhs, rhs) = get_lhs_rhs(eq);
+    let (lhs, rhs) = (
+        transform_tokens(tokenize(lhs)),
+        transform_tokens(tokenize(rhs))
+    );
+    reduce(lhs, rhs)
 }
