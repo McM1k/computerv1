@@ -1,3 +1,5 @@
+mod parser;
+
 use std::env;
 
 fn print_solution(degree: i32, pol: Vec<f64>) {
@@ -63,55 +65,16 @@ fn print_reduced(pol: Vec<f64>) {
     println!("Reduced form : {}= 0", format);
 }
 
-fn parse(eq: String) -> Result<Vec<f64>, String> {
-    let splits: Vec<&str> = eq.split(' ').collect();
-    let mut rhs = false;
-    let mut tmp = 1.0;
-    let mut pol = vec![0.0];
-    for split in splits {
-        match split.chars().nth(0).unwrap() {
-            '-' => {
-                if split == "-" {
-                    tmp = -1.0;
-                }
-            }
-            '+' => (),
-            '*' => (),
-            '0'..='9' => {
-                tmp = match split.parse::<f64>() {
-                    Ok(x) => tmp * x,
-                    Err(_) => { return Err(format!("Cannot parse float : \"{}\"", split)); }
-                };
-            }
-            'X' => {
-                let pow = match split[2..].parse::<usize>() {
-                    Ok(x) => x,
-                    Err(_) => { return Err(format!("Cannot parse power : \"{}\"", split)); }
-                };
-                while pow < pol.len() {
-
-                }
-                pol[pow] = tmp;
-                tmp = 1.0;
-            }
-            '=' => { rhs = true; }
-            _ => {
-                return Err(format!("wrong token : \"{}\"", split));
-            }
-        }
-    }
-    Ok(reduce(lhs, rhs))
-}
 
 fn main() {
     let eq = env::args()
         .nth(1)
         .unwrap_or_else(|| panic!("Can't get the first parameter"));
-    let pol = match parse(eq) {
+    let pol = match parser::parse(eq) {
         Ok(x) => x,
         Err(e) => panic!(e),
     };
-    print_reduced(pol);
-    let degree = print_degree(pol);
+    print_reduced(pol.copy());
+    let degree = print_degree(pol.copy());
     print_solution(degree, pol);
 }
