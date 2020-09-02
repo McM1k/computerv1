@@ -1,22 +1,21 @@
 fn get_lhs_rhs(eq: String) -> (String, String) {
     let splits: Vec<&str> = eq.split('=').collect();
     let lhs = splits[0].to_string();
-    let rhs = match splits.iter().nth(1) {
-        Some(x) => x.to_string(),
-        None => format!("0"),
+    let rhs = match splits.get(1) {
+        Some(&x) => x.to_string(),
+        None => "0".to_string(),
     };
     (lhs, rhs)
 }
 
 fn cut_spaces(eq: String) -> String {
-    let new = eq.replace(" ", "");
-    new
+    eq.replace(" ", "")
 }
 
 fn tokenize(eq: String) -> Vec<String> {
-    let splits_indices: (usize, &str) = eq.match_indices(|c| {c == '+' || c == '-'}).collect();
+    let splits_indices: Vec<(usize, &str)> = eq.match_indices(|c| {c == '+' || c == '-'}).collect();
     let mut vec = Vec::new();
-    if splits_indices.len() == 0 {
+    if splits_indices.is_empty() {
         vec.push(eq);
     }
     else {
@@ -27,10 +26,10 @@ fn tokenize(eq: String) -> Vec<String> {
         while i < splits_indices.len() {
             let (ind, _split) = splits_indices[i];
             let next_ind;
-            if splits_indices.len() == i-1 { next_ind = eq.len(); }
+            if splits_indices.len() == i+1 { next_ind = eq.len(); }
             else { next_ind = splits_indices[i + 1].0; }
             vec.push(eq[ind..next_ind].to_string());
-            i = i + 1;
+            i += 1;
         }
     }
     vec
@@ -43,7 +42,7 @@ fn transform_tokens(tokens: Vec<String>) -> Vec<f64> {
         while vec.len() < pow + 1 {
             vec.push(0.0);
         }
-        vec[pow] = vec[pow] + value;
+        vec[pow] += value;
     }
     vec
 }
@@ -54,8 +53,8 @@ fn retrieve_value_pow(token: String) -> (f64, usize) {
         .parse::<f64>()
         .unwrap_or_else(|_|panic!("Unable to parse value"));
     let pow;
-    if split.len() > 0 {
-        if split[1].len() == 0 { pow = 1; }
+    if split.len() > 1 {
+        if split[1].is_empty() { pow = 1; }
         else {
             pow = split[1]
                 .replace("^", "")
@@ -74,7 +73,7 @@ fn reduce(lhs: Vec<f64>, rhs: Vec<f64>) -> Vec<f64> {
         if lhs.len() <= i { pol.push(- rhs[i]); }
         else if rhs.len() <= i { pol.push(lhs[i]); }
         else { pol.push(lhs[i] - rhs[i]); }
-        i = i + 1;
+        i += 1;
     }
     while pol.last().is_some() && (pol[pol.len() - 1] == 0.0) { pol.pop(); }
     pol
