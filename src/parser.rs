@@ -8,8 +8,8 @@ fn get_lhs_rhs(eq: String) -> (String, String) {
     (lhs, rhs)
 }
 
-fn cut_spaces(eq: String) -> String {
-    eq.replace(" ", "")
+fn cut_spaces_and_stars(eq: String) -> String {
+    eq.replace(" ", "").replace("*","")
 }
 
 fn tokenize(eq: String) -> Vec<String> {
@@ -49,9 +49,15 @@ fn transform_tokens(tokens: Vec<String>) -> Vec<f64> {
 
 fn retrieve_value_pow(token: String) -> (f64, usize) {
     let split: Vec<&str> = token.split('X').collect();
-    let value = split[0]
-        .parse::<f64>()
-        .unwrap_or_else(|_|panic!("Unable to parse value"));
+    let value;
+    if split.len() == 2 && split[0].is_empty() {
+        value = 1.0;
+    }
+    else {
+        value = split[0]
+            .parse::<f64>()
+            .unwrap_or_else(|_| panic!("Unable to parse value"));
+    }
     let pow;
     if split.len() > 1 {
         if split[1].is_empty() { pow = 1; }
@@ -80,7 +86,7 @@ fn reduce(lhs: Vec<f64>, rhs: Vec<f64>) -> Vec<f64> {
 }
 
 pub fn parse(eq: String) -> Vec<f64> {
-    let eq = cut_spaces(eq);
+    let eq = cut_spaces_and_stars(eq);
     let (lhs, rhs) = get_lhs_rhs(eq);
     let (lhs, rhs) = (
         transform_tokens(tokenize(lhs)),
