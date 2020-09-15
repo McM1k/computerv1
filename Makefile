@@ -20,3 +20,9 @@ norm:
 
 test:
 	cargo test
+
+install:
+	sh rustup.sh
+
+uninstall:
+	rustup self uninstall
